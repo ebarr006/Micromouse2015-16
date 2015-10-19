@@ -1,0 +1,203 @@
+int MotorPowerEN_A = 7;              // Motor A
+int MotorLogic1_A = 6;
+int MotorLogic2_A = 5;
+
+int MotorPowerEN_B = 8;              // Motor B
+int MotorLogic1_B = 11;
+int MotorLogic2_B = 10;
+
+int led = 3;
+int left = 0;
+int right = 0;
+
+int analogL = A0;
+int analogR = A1;
+
+int MIN = 10;
+int MAX = 255;
+
+int i = 0;
+
+
+void setup()
+{
+  pinMode(MotorPowerEN_A, OUTPUT);    // Motor A Intialize
+  pinMode(MotorLogic1_A, OUTPUT);
+  pinMode(MotorLogic2_A, OUTPUT);
+  
+  pinMode(MotorPowerEN_B, OUTPUT);     // Motor B Initalize
+  pinMode(MotorLogic1_B, OUTPUT);
+  pinMode(MotorLogic2_B, OUTPUT); 
+  
+  digitalWrite(MotorPowerEN_A, LOW);    // initalize to LOW
+  digitalWrite(MotorPowerEN_B, LOW);
+  
+  pinMode(led, OUTPUT);
+//  pinMode(analogL, INPUT);
+//  pinMode(analogR, INPUT);
+  
+  Serial.begin(9600);
+}
+
+
+void readEncoders()
+{
+  left = analogRead(analogL);
+  right = analogRead(analogR);
+  
+  if (left > 500)
+  {
+    left = 1;
+  }
+  else
+  {
+    left = 0;
+  }
+  
+  if (right > 500)
+  {
+    right = 1;
+  }
+  else
+  {
+    right = 0;
+  }
+  
+  Serial.println(left);
+  Serial.print("      ");
+  Serial.print(right);
+  Serial.println("      ");
+  Serial.println();
+  Serial.println();
+  
+//  Serial.write(analogL);
+//  Serial.write("    ");
+//  Serial.write(analogR);
+  
+  delay(500);
+}
+  
+
+
+void Forward()
+{
+  analogWrite(led, 255);
+  
+  
+  digitalWrite(MotorPowerEN_A, HIGH);
+  analogWrite(MotorLogic1_A, 100);
+  digitalWrite(MotorLogic2_A, LOW);
+  
+  digitalWrite(MotorPowerEN_B, HIGH);
+  digitalWrite(MotorLogic1_B, LOW);
+  analogWrite(MotorLogic2_B, 100);
+  
+}
+
+
+void Backward()
+{
+  analogWrite(led, 125);
+  
+  digitalWrite(MotorPowerEN_A, HIGH);
+  digitalWrite(MotorLogic1_A, LOW);
+  analogWrite(MotorLogic2_A, 100);
+  
+  digitalWrite(MotorPowerEN_B, HIGH);
+  analogWrite(MotorLogic1_B, 100);
+  digitalWrite(MotorLogic2_B, LOW);
+  
+  
+}
+
+void STOP()
+{
+  digitalWrite(MotorPowerEN_A, LOW);
+  digitalWrite(MotorPowerEN_B, LOW);
+  
+  digitalWrite(led, LOW);
+}
+
+void accelerateF(int cap)      // argument is roof val of 0 < i < 255
+{
+  digitalWrite(MotorPowerEN_A, HIGH);
+  digitalWrite(MotorPowerEN_B, HIGH);
+  
+  for (i = 10; i < cap; ++i)
+  {
+    analogWrite(MotorLogic1_A, i);
+    digitalWrite(MotorLogic2_A, LOW);
+    
+    digitalWrite(MotorLogic1_B, LOW);
+    analogWrite(MotorLogic2_B, i);
+    
+    delay(10);                    // so you can visibly see acceleration
+  }
+  
+}
+
+void deccelerateF()        // argument is floor val of 0 < i < 255
+
+// FIXME: STARTING SPEED FOR LOOP DEPENDS ON INITIAL SPEED OF MOTOR
+// ** NEED A WAY TO MEASURE CURRENT SPEED OF MOTOR AND PASS IN AS ARG.
+
+{
+  digitalWrite(MotorPowerEN_A, HIGH);
+  digitalWrite(MotorPowerEN_B, HIGH);
+  
+  for (i = MAX; i > 0; --i)
+  {
+    analogWrite(MotorLogic2_A, i);
+    analogWrite(MotorLogic1_B, i);
+    digitalWrite(MotorLogic1_A, LOW);
+    digitalWrite(MotorLogic2_B, LOW);
+    
+    delay(10);
+  }
+}
+
+void forwardLimit()
+{
+  // Go Forward a set amount of spaces (soon to be cells!)
+}
+
+void leftTurn()
+{
+  // Need to calibrate ticks to turns, perhaps convert **FIXME
+}
+
+bool activate()
+{
+  int input = 0;
+  if (Serial.available())
+  {
+    input = Serial.read();
+    
+    if (input == 'a')
+    {
+      return true;
+    }
+  }
+}
+        
+
+void loop()
+{
+  
+  // just implement to test
+  
+  Forward();
+  delay(2000);
+  
+  STOP();
+  delay(2000);
+  
+  Backward();
+  delay(2000);
+  
+  STOP();
+  delay(2000);
+  
+  accelerateF(MAX);
+  
+}
