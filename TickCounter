@@ -1,0 +1,75 @@
+// SET CONSTANTS
+
+
+
+
+ //int val_A; 
+ int encoderLEFT_A = A0;          // Doesn't have to be Analog Pin
+ int encoderLEFT_B = A1;          // I get 2 signals from hall effect sensors
+ int LEFTPos = 0;                 // Postition counter
+ int LEFT_PinALast = LOW;         // my last signal (high or low)
+ int left = LOW;                  // my current signal
+ 
+ //int val_B; 
+ int encoderRIGHT_A = A4;        
+ int encoderRIGHT_B = A5;
+ int RIGHTPos = 0;
+ int RIGHT_PinALast = LOW;
+ int right = LOW;
+ 
+
+ void setup() { 
+   pinMode (encoderLEFT_A,INPUT);      // Initialize the pins that the
+   pinMode (encoderLEFT_B,INPUT);      // encoder pins are connected to
+   
+   pinMode(encoderRIGHT_A, INPUT);
+   pinMode(encoderRIGHT_B, INPUT);
+   Serial.begin (9600);                // Intialize Baud rate for Serial output
+ }
+ 
+ void trackLEFT()
+ {
+   left = digitalRead(encoderLEFT_A);  // set my current signal to 'left'
+   if ((LEFT_PinALast == LOW) && (left == HIGH))
+   {
+     if (digitalRead(encoderLEFT_B) == LOW)
+     {
+       --LEFTPos;
+     }
+     else
+     {
+       ++LEFTPos;
+     }
+     Serial.print("LEFT:   ");
+     Serial.println(LEFTPos);
+   } 
+   LEFT_PinALast = left;
+ }
+ 
+ void trackRIGHT()
+ {
+   right = digitalRead(encoderRIGHT_A);
+   if ((RIGHT_PinALast == LOW) && (right == HIGH))
+   {
+     if (digitalRead(encoderRIGHT_B) == LOW)
+     {
+       ++RIGHTPos;
+     }
+     else
+     {
+       --RIGHTPos;
+     }
+     Serial.print("RIGHT:   ");
+     Serial.println(RIGHTPos);
+   }
+   RIGHT_PinALast = right;
+ }
+ 
+
+   
+
+ void loop()
+ {
+   trackLEFT();
+   trackRIGHT();
+ } 
