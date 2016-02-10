@@ -1,0 +1,54 @@
+int res1 = A0;
+int res2 = A1;
+int res3 = A2;
+
+int sensor1 = 0;
+int sensor2 = 0;
+int sensor3 = 0;
+
+int LEFTMotorEN = 7;
+int LEFTlogic1 = 6;
+int LEFTlogic2 = 5;
+
+int RIGHTMotorEN = 8;
+int RIGHTlogic1 = 3;
+int RIGHTlogic2 = 4;
+
+void setup()
+{  
+  pinMode(res1, INPUT);
+  pinMode(res2, INPUT);
+  pinMode(res3, INPUT);
+
+  pinMode(LEFTMotorEN, OUTPUT);
+  pinMode(LEFTlogic1, OUTPUT);
+  pinMode(LEFTlogic2, OUTPUT);
+  
+  digitalWrite(LEFTMotorEN, LOW);
+  
+  pinMode(RIGHTMotorEN, OUTPUT);
+  pinMode(RIGHTlogic1, OUTPUT);
+  pinMode(RIGHTlogic2, OUTPUT);
+  
+  digitalWrite(RIGHTMotorEN, LOW);
+  
+  Serial1.begin(9600);
+}
+
+void loop()
+{
+  sensor1 = analogRead(res1);
+  Serial1.print("Sensor 1:  ");
+  Serial1.println(sensor1);
+  
+  sensor2 = analogRead(res2);
+  Serial1.print("Sensor 2:  ");
+  Serial1.println(sensor2);
+
+  sensor3 = analogRead(res3);
+  Serial1.print("Sensor 3:  ");
+  Serial1.println(sensor3);
+  
+  delay(500);
+  
+}
