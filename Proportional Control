@@ -1,0 +1,268 @@
+/* Micromouse Code
+Emilio Barreiro ebarr006@ucr.edu
+Andrew Nava-Juarez anava014@ucr.edu
+*/
+
+//Left Encoder 90 Degree: -89
+//Right Encoder 90 Degree: 84
+
+#define WAVE_VALUE 350
+#define FRONT_LIMIT 400         // need to check
+#define LEFT_LIMIT 350
+#define RIGHT_LIMIT 300
+#define MOTOR_FULL_SPEED 150
+
+double kp = .25; //Constant of Proportion
+
+int sensorR = A0;
+int sensorM = A1;
+int sensorL = A2;
+
+int sensorReadingR = 0;
+int sensorReadingM = 0;
+int sensorReadingL = 0;
+
+int permReadingL = 0;
+int permReadingM = 0;
+int permReadingR = 0;
+
+int LEFTMotorEN = 7;
+int LEFTlogic1 = 6;
+int LEFTlogic2 = 5;
+
+int RIGHTMotorEN = 8;
+int RIGHTlogic1 = 3;
+int RIGHTlogic2 = 4;
+
+int encoderLEFT_A = A4;
+int encoderLEFT_B = A3;
+int LEFTPos = 0;
+int LEFT_PinALast = LOW;
+int left = LOW;
+
+int encoderRIGHT_A = A6;
+int encoderRIGHT_B = A5;
+int RIGHTPos = 0;
+int RIGHT_PinALast = LOW;
+int right = LOW;
+
+
+void setup()
+{  
+  pinMode(sensorR, INPUT);
+  pinMode(sensorM, INPUT);
+  pinMode(sensorL, INPUT);
+
+  pinMode(LEFTMotorEN, OUTPUT);
+  pinMode(LEFTlogic1, OUTPUT);
+  pinMode(LEFTlogic2, OUTPUT);
+  
+  digitalWrite(LEFTMotorEN, LOW);
+  
+  pinMode(RIGHTMotorEN, OUTPUT);
+  pinMode(RIGHTlogic1, OUTPUT);
+  pinMode(RIGHTlogic2, OUTPUT);
+  
+  digitalWrite(RIGHTMotorEN, LOW);
+  
+  pinMode(encoderLEFT_A, INPUT);
+  pinMode(encoderLEFT_B, INPUT);
+  
+  pinMode(encoderRIGHT_A, INPUT);
+  pinMode(encoderRIGHT_B, INPUT);
+
+  pinMode(LEFTMotorEN, OUTPUT);
+  pinMode(LEFTlogic1, OUTPUT);
+  pinMode(LEFTlogic2, OUTPUT);
+  
+  digitalWrite(LEFTMotorEN, LOW);
+  
+  pinMode(RIGHTMotorEN, OUTPUT);
+  pinMode(RIGHTlogic1, OUTPUT);
+  pinMode(RIGHTlogic2, OUTPUT);
+  
+  digitalWrite(RIGHTMotorEN, LOW);
+ 
+  Serial1.begin(9600);
+  
+  liftOff();
+  delay(1000);
+  calibrate();
+  forward(MOTOR_FULL_SPEED, MOTOR_FULL_SPEED);
+  
+}
+
+/*Calibrates mouse after detecting finger wave*/
+void liftOff(){
+  while(analogRead(sensorM) < WAVE_VALUE) {}
+  Serial1.println("Liftoff");
+}
+
+void calibrate(){
+  permReadingL = analogRead(sensorL);
+  permReadingM = analogRead(sensorM);
+  permReadingR = analogRead(sensorR);
+}
+
+void regulateSensorL(){
+  sensorReadingL = analogRead(sensorL);
+  sensorReadingL = sensorReadingL - permReadingL;
+  if(analogRead(sensorL) - permReadingL < 0)
+      sensorReadingL = ~sensorReadingL + 1;
+}
+
+void regulateSensorR(){
+  sensorReadingR = analogRead(sensorR);
+  sensorReadingR = sensorReadingR - permReadingR;
+  if(sensorReadingR < 0)
+      sensorReadingR = ~sensorReadingR + 1;
+}
+
+/* Centers the position of the mouse using PID
+Currently, we are using proportional control
+*/
+void pidControl(){
+  regulateSensorL();
+  regulateSensorR();
+  
+  if(sensorReadingL > sensorReadingR && sensorReadingL - sensorReadingR > 10){ //Too close to left
+      forward(MOTOR_FULL_SPEED, MOTOR_FULL_SPEED - ((sensorReadingL - sensorReadingR) * kp));
+  }
+  
+  else if(sensorReadingR > sensorReadingL && sensorReadingR - sensorReadingL > 10){ //Too close to right
+      forward(MOTOR_FULL_SPEED - ((sensorReadingR - sensorReadingL) * kp), MOTOR_FULL_SPEED);
+  }
+  else
+      forward(MOTOR_FULL_SPEED, MOTOR_FULL_SPEED);
+}
+
+
+
+/* Checks if theres a front wall, if there isn't, return. If there is, continue
+   on to check peripherals
+*/
+
+void checkPeripherals(){
+  if (analogRead(sensorM) >= FRONT_LIMIT){   
+    u_Turn();
+    // if (!leftPresent() && rightPresent())   // if there is NO WALL on left, IS WALL on right (left turn)
+    // {
+    //  //leftTurn();
+    // }
+    // else if (leftPresent() && !rightPresent())  // if there IS WALL on left, and NO WALL on right (right turn)
+    // {
+    //  // rightTurn();
+    // }
+    // else if (leftPresent() && rightPresent())   // its at a dead end, IS WALL on left and right
+    // {
+    //  // u_Turn();
+    // }
+    // else if (!leftPresent() && !rightPresent())
+    // {
+    //  // randomTurn();
+    // }
+  }
+}
+
+void trackLEFT(){
+  left = digitalRead(encoderLEFT_A);  // set my current signal to 'left'
+  if ((LEFT_PinALast == LOW) && (left == HIGH)){
+   if (digitalRead(encoderLEFT_B) == LOW)
+     --LEFTPos;
+   else
+     ++LEFTPos;
+  } 
+  LEFT_PinALast = left;
+}
+
+void trackRIGHT(){
+   right = digitalRead(encoderRIGHT_A);
+   if ((RIGHT_PinALast == LOW) && (right == HIGH)){
+     if (digitalRead(encoderRIGHT_B) == LOW)
+       ++RIGHTPos;
+     else
+       --RIGHTPos;
+   }
+   RIGHT_PinALast = right;
+}
+
+void u_Turn(){
+  halt();
+  delay(500);
+  leftTurn();
+  while(LEFTPos > -94) {
+    trackLEFT();
+  }
+  halt();
+  RIGHTPos = LEFTPos = 0;
+  delay(500);
+
+  forward(MOTOR_FULL_SPEED, MOTOR_FULL_SPEED);
+}
+
+bool leftPresent()
+{
+  if (analogRead(sensorL) >= LEFT_LIMIT)
+      return true;                    // there IS a wall
+  else
+      return false;
+}
+
+bool rightPresent()
+{
+  if (analogRead(sensorR) >= RIGHT_LIMIT)
+      return true;
+  else
+      return false;
+}
+
+ void leftTurn()
+{
+  digitalWrite(LEFTMotorEN, HIGH);
+  digitalWrite(RIGHTMotorEN, HIGH);
+  analogWrite(LEFTlogic1, MOTOR_FULL_SPEED);
+  analogWrite(LEFTlogic2, 0);
+  analogWrite(RIGHTlogic1, 0);
+  analogWrite(RIGHTlogic2, MOTOR_FULL_SPEED);
+}
+
+void rightTurn()
+{
+  digitalWrite(LEFTMotorEN, HIGH);
+  analogWrite(LEFTlogic1, 0);
+  analogWrite(LEFTlogic2, MOTOR_FULL_SPEED);
+  
+  digitalWrite(RIGHTMotorEN, HIGH);
+  analogWrite(RIGHTlogic1, MOTOR_FULL_SPEED);
+  analogWrite(RIGHTlogic2, 0);
+}
+
+void forward(int leftMotorSpeed, int rightMotorSpeed){
+  digitalWrite(LEFTMotorEN, HIGH);
+  analogWrite(LEFTlogic1, 0);
+  analogWrite(LEFTlogic2, leftMotorSpeed);
+  
+  digitalWrite(RIGHTMotorEN, HIGH);
+  analogWrite(RIGHTlogic1, 0);
+  analogWrite(RIGHTlogic2, rightMotorSpeed);
+}
+
+void halt() {
+  digitalWrite(LEFTMotorEN, LOW);
+  digitalWrite(RIGHTMotorEN, LOW);
+}
+
+void forward(){
+  digitalWrite(LEFTMotorEN, HIGH);
+  digitalWrite(LEFTlogic1, LOW);
+  digitalWrite(LEFTlogic2, HIGH);
+  
+  digitalWrite(RIGHTMotorEN, HIGH);
+  digitalWrite(RIGHTlogic1, LOW);
+  digitalWrite(RIGHTlogic2, HIGH);
+}
+
+void loop(){
+  pidControl();
+  checkPeripherals();
+}
